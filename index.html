@@ -1,0 +1,225 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+    <!-- Don't use this in production: -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <title>Document</title>
+
+
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const SYMBOL_X = 'X';
+        const SYMBOL_O = 'O';
+
+        function useGameSet() {
+            const [cells, setCells] = React.useState(Array(9).fill(null));
+            const [currentStep, setCurrentStep] = React.useState(SYMBOL_X);
+            const [winnerSequence, setWinnerSequence] = React.useState();
+            const [draw, setDraw] = React.useState();
+
+            const checkDraw = (cells) => {
+                for (let i = 0; i < cells.length; i++) {
+                    if (cells[i] === null) return false;
+                }
+                return true;
+            }
+
+            const resetGame = () => {
+                setCells(Array(9).fill(null));
+                setDraw(false);
+                setWinnerSequence(null);
+                setCurrentStep(SYMBOL_X);
+            }
+
+            const checkWinner = (cells) => {
+                const winningCombos = [
+                    [0, 1, 2], [3, 4, 5], [6, 7, 8],
+                    [0, 3, 6], [1, 4, 7], [2, 5, 8],
+                    [0, 4, 8], [2, 4, 6]
+                ];
+
+                for (let i = 0; i < winningCombos.length; i++) {
+                    const [a, b, c] = winningCombos[i]
+                    if (cells[a] && cells[a] === cells[b] && cells[a] === cells[c]) {
+                        return [a, b, c];
+                    }
+                }
+            }
+
+            const handleCellClick = (index) => {
+                if (cells[index] || winnerSequence || draw) { return }
+                const newCells = cells.slice();
+                newCells[index] = currentStep;
+                const winner = checkWinner(newCells);
+                const isDraw = checkDraw(newCells);
+
+                setCells(newCells);
+                setCurrentStep(currentStep === SYMBOL_O ? SYMBOL_X : SYMBOL_O);
+                setWinnerSequence(winner);
+                if (isDraw && !winner) setDraw(isDraw);
+            }
+
+            return {
+                winnerSequence,
+                draw,
+                winnerSymbol: winnerSequence ? cells[winnerSequence[0]] : undefined,
+                currentStep,
+                cells,
+                handleCellClick,
+                resetGame
+            };
+        }
+
+        function App() {
+            const { winnerSequence, draw, winnerSymbol, currentStep, cells, handleCellClick, resetGame } = useGameSet();
+
+            return (
+                <div>
+                    <div className="game">
+                        <GameInfo
+                            winnerSequence={winnerSequence}
+                            draw={draw}
+                            winnerSymbol={winnerSymbol}
+                            currentStep={currentStep}
+                        />
+                        <div className="game-field">
+                            {cells.map((symbol, index) => {
+                                const isWin = winnerSequence?.includes(index);
+                                return (
+                                    <GameCell
+                                        key={index}
+                                        symbol={symbol}
+                                        isWin={isWin}
+                                        onClick={() => handleCellClick(index)}
+                                    />
+                                );
+                            })}
+                        </div>
+                        <div className="reset">
+                            <button className="resetBTN" onClick={resetGame}>Reset</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+
+        function GameCell({ isWin, onClick, symbol }) {
+            return (
+                <button
+                    className={`cell ${isWin ? 'cell--win' : ''}`}
+                    onClick={onClick}
+                >
+                    {symbol ? <GameSymbol symbol={symbol} /> : null}
+                </button>
+            );
+        }
+
+        function GameSymbol({ symbol }) {
+            const getSymbolClassName = (symbol) => {
+                if (symbol === SYMBOL_O) return 'symbol--o';
+                if (symbol === SYMBOL_X) return 'symbol--x';
+                return '';
+            };
+
+            return (
+                <span className={`symbol ${getSymbolClassName(symbol)}`}>{symbol}</span>
+            );
+        }
+
+        function GameInfo({ winnerSequence, draw, winnerSymbol, currentStep }) {
+            return (
+                <div className="game-info">
+                    {winnerSequence ? 'Winner: ' : draw ? 'Draw' : 'Step: '}
+                    {!draw && <GameSymbol symbol={winnerSymbol ?? currentStep} />}
+                </div>
+            );
+        }
+
+        // Rest of your code remains the same...
+
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+
+    </script>
+    <style>
+        html {
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .reset {
+            display: flex;
+            justify-content: center;
+            padding-top: 20px;
+        }
+
+        .resetBTN {
+            text-align: center;
+            align-items: center;
+            width: 120px;
+        }
+
+        .game {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 150px;
+            margin: 100px auto;
+            padding: 20px;
+            border: 1px solid black;
+        }
+
+        .game-info {
+            margin-bottom: 10px;
+        }
+
+        .game-field {
+            display: grid;
+            grid-template-columns: repeat(3, 30px);
+            grid-template-rows: repeat(3, 30px);
+            padding: 1px 0 0 1px;
+        }
+
+        .cell {
+            border: 1px solid grey;
+            margin: -1px 0 0 -1px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: transparent;
+        }
+
+        .cell--win {
+            background: rgba(255, 0, 0, 0.1);
+        }
+
+        .cell--draw {
+            background: rgba(255, 0, 0, 0.1);
+        }
+
+        .symbol {
+            font-size: 20px;
+            line-height: 24px;
+        }
+
+        .symbol--x {
+            color: red;
+        }
+
+        .symbol--o {
+            color: green;
+        }
+    </style>
+
+
+</body>
+
+</html>
